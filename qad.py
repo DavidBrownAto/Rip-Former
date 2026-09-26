@@ -1,30 +1,5 @@
-"""QAD: Quality-Aware Decoder for RT-DETR.
-
-Diagnosis this module answers: on the rip-current split the oracle mAP50-95 (score every
-query by its true IoU) is ~0.72 while the model reports ~0.46, and Spearman(conf, IoU) is
-0.143 -- the good box is almost always produced, it is just not ranked first. The cause is
-supervision density: VFL writes an IoU-valued target into exactly one of the 300 queries per
-image and zero into the other 299, so nothing in the loss ever teaches the remaining queries
-how good their own box is.
-
-Three additions, none of which changes the tensor contract seen by ``val.py``/``predict.py``:
-
-* ``DQH`` -- a shared 2-layer quality head supervised on *every* query with
-  ``max_j IoU(box_i, gt_j)``. Dense localisation-quality supervision, training only.
-* score fusion -- at inference the reported score becomes
-  ``cls**(1-beta) * qual**beta``. ``qual_beta`` is a plain attribute, so the whole
-  beta sweep (including ``beta=0``, i.e. the quality head switched off) is an offline
-  re-evaluation of one checkpoint rather than a retraining.
-* ``RSA`` -- a geometric position-relation bias added to the decoder's query self-attention
-  logits (Relation-DETR, CVPR'24). The stock self-attention sees no box geometry at all, so
-  duplicate suppression has only content similarity to work with; on this split the leftover
-  duplicates are worth 1.58pp of mAP50. The bias MLP is zero-initialised, and the sign is
-  learned rather than imposed -- DETR de-duplicates by letting overlapping queries *see* each
-  other, so hard-coding a repulsive bias would break the mechanism instead of helping it.
-
-The relation bias is applied to the denoising queries as well. That is deliberate: within a
-CDN group the positive/negative pair is a well-localised and a badly-localised copy of the
-same object, which is precisely the discrimination RSA needs to learn.
+"""
+QAD: Quality-Aware Decoder for RT-DETR.
 """
 
 import torch
